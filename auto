@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+
+## VARIABLES
+THIS_DIR=$(cd "$(dirname "$0")"; pwd)
+TDCLI='https://valtman.name/files/telegram-cli-1222'
+command='sudo rm -r /tmp/!(tmux*)'
+## Print Colorful
+# Print text in red
+prtred() {
+  printf '\e[1;31m%s\n\e[0;39;49m' "$@"
+}
+# Print text in green
+prtgrn() {
+  printf '\e[1;32m%s\n\e[0;39;49m' "$@"
+}
+# Print text in brown
+prtbrown() {
+  printf '\e[1;33m%s\n\e[0;39;49m' "$@"
+}
+# autolauncher
+delete() {
+  prtgrn 'Enter the number of bot that you want to delete :  '
+  read -rp ' ' num
+  redis-cli -n $num flushdb
+  rm -rf Paya-"$num".session 
+  rm -rf PayaPaya-"$num".peer
+
+  prtred 'Deleted !'
+
+}
+autolaunchmod() {
+  shopt -s extglob
+  prtgrn 'Enter your license code : '
+  read -rp ' ' code
+
+
+  while true ; do
+    eval '$command'
+    for tablighgar in Paya-*.session ; do
+      tab="${tablighgar%.*}"
+      ltab="${tab/-/ }"
+      number="${tab/*-/ }"
+	  echo "Bot number" $number "is runing"
+      tmux kill-session -t $tab
+      TMUX= tmux new-session -d -s $tab "./bot" $number "$code"
+	  tmux detach -s $tab
+      sleep 3
+    done
+    echo -e " \n\e[1;32mربات ها راه اندازی شدند << \e[1;34m| Naji <3 |\e[1;32m>> Bots are Running\n\e[0;39;49m"
+    sleep 600
+  done
+}
+# stop all
+stopall() {
+    for tablighgar in bot-*.lua ; do
+      tab="${tablighgar%.*}"
+      ltab="${tab/-/ }"
+      tmux kill-session -t ro$tab
+      for tg in ~/.telegram-cli/ro$tab/data/* ; do
+        rm -rf $tg/*
+      done
+    done
+    echo -e " \n\e[1;32mربات ها راه اندازی شدند << \e[1;34m| Naji |\e[1;32m>> Bots are Running\n\e[0;39;49m"
+    sleep 900
+}
+## MAIN ------------------------------------------------------------------------
+# Make sure this script run inside Bot directory
+cd "$THIS_DIR" || exit
+case $1 in
+  update)
+    update
+  ;;
+  create)
+    create
+  ;;
+  del)
+    delete
+  ;;  
+  codeupdate)
+    Codeupdate
+  ;;
+  install)
+    install
+  ;;
+  fix)
+    fix
+  ;;
+  autolaunch)
+    tmux kill-session -t autolaunch
+    tmux new-session -s autolaunch "bash auto autolaunchmod"
+  ;;
+  autolaunchmod)
+    autolaunchmod
+  ;;
+  stopall)
+    stopall
+  ;;
+  a*)
+    id="${1/a/}"
+    if [ -a "$THIS_DIR"/bot-"$id".lua ]; then
+      screen -x -s bot-"$id" quit
+      while true ; do
+        screen -s bot-"$id" ./telegram-cli -p bot-"$id" -s bot-"$id".lua
+        sleep 10
+      done
+    else
+      usage
+    fi
+  ;;
+  clr)
+    clear
+  ;;
+  *)
+    if [ -a "$THIS_DIR"/bot-"$1".lua ]; then
+      ./telegram-cli -p robot-"$1" -s bot-"$1".lua
+    else
+    usage
+    fi
+  ;;
+esac
